@@ -1,0 +1,194 @@
+---
+title: Воронин А. В. Д/З №5
+```{r}
+{r}
+# Задание 1
+#Создайте регрессионную модель, которая бы описывала связь среднего радиуса опухоли и средней площади (а), среднего периметра (б), средней симметричности (в).
+
+#Постройте графики, на которых отразите регрессионную прямую, и прокомментируйте свои находки.
+
+# Импортируем библиотеки
+install.packages("ggsurvfit")
+install.packages("survminer")
+install.packages("pROC")
+library(ggplot2)
+library(tidyverse)
+library(car)
+library(survival)
+library(ggsurvfit)
+library(survminer)
+library(pROC)
+```
+```{r}
+# Загружаем датасет
+date <- read.csv(file="C:/Users/user/Desktop/wisconsin_breast_cancer.csv")
+
+# Выводим данные
+print(date)
+str(date)
+```
+```{r}
+# Проверяем наличие пропусков в данных
+colSums(is.na(date[c("radius_mean", "area_mean", "perimeter_mean", "symmetry_mean")]))
+```
+```{r}
+# Создаем модель регрессии среднего радиуса опухоли к средней площади опухоли
+model_date <- lm(radius_mean ~ area_mean, data = date)
+summary(model_date)
+```
+```{r}
+# Выводим график зависимости радиуса и площади опухоли
+ggplot(date, aes(x = area_mean, y = radius_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+```{r}
+# Выводим критерии
+model_date_AIC <- AIC(model_date)
+model_date_BIC <- BIC(model_date)
+cat("AIC =", model_date_AIC, "\n")
+cat("BIC =", model_date_BIC, "\n")
+```
+```{r}
+# Создаем модель регрессии среднего радиуса опухоли к среднему периметру опухоли
+model_date1 <- lm(radius_mean ~ perimeter_mean, data = date)
+```
+```{r}
+# Выводим график зависимости радиуса и периметра опухоли
+ggplot(date, aes(x = perimeter_mean, y = radius_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+```{r}
+# Выводим критерии
+model_date1_AIC <- AIC(model_date1)
+model_date1_BIC <- BIC(model_date1)
+cat("AIC =", model_date1_AIC, "\n")
+cat("BIC =", model_date1_BIC, "\n")
+```
+```{r}
+# Создаем модель регрессии среднего радиуса опухоли к средней симметричности 
+model_date2 <- lm(radius_mean ~ symmetry_mean, data = date)
+```
+```{r}
+# Выводим график зависимости радиуса и симметричности
+ggplot(date, aes(x = symmetry_mean, y = radius_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+```{r}
+# Выводим критерии
+model_date2_AIC <- AIC(model_date2)
+model_date2_BIC <- BIC(model_date2)
+cat("AIC =", model_date2_AIC, "\n")
+cat("BIC =", model_date2_BIC, "\n")
+```
+```{r}
+# Вывод: в первых двух случаях мы видим высокую зависимость между радиусом опухоли и ее площадью и периметром, на третьем графике зависимость между радиусом и симметричностью опухоли очень слабая.
+```
+```{r}
+# Задание 2
+# Пусть колонка с диагнозом принимает следующие значения: злокачественная опухоль — 1, а доброкачественная — 0. Постройте модель, которая бы прогнозировала вероятность возникновения злокачественной опухоли от среднего радиуса (а), средней площади (б), средней текстуры (в).
+
+# Постройте графики. Создайте модель, которая бы прогнозировала вероятность возникновения злокачественной опухоли от всех трех перечисленных факторов.
+
+# Преобразуем данные в столбце диагноз в числовые данные 1 и 0 и выводим данные
+date$diagnosis <- ifelse(date$diagnosis == "M", 1, 0)
+print(date)
+```
+```{r}
+# Задаем нулевую гипотезу (Н0) и альтернативную гипотезу (Н1), alpha = 0.05
+
+# Строим модель логистической регрессии
+gf <-
+  glm(diagnosis ~ radius_mean + area_mean + texture_mean, date = cancer, family = "binomial")
+summary(gf)
+```
+```{r}
+# Выводим кривую логистической регрессии зависимости типа опухоли от радиуса 
+date %>%
+    ggplot(aes(x = radius_mean, y = diagnosis)) +
+    geom_point() +
+    labs(title = "Зависимость типа опухоли и сренего радиуса",
+      x = "Радиус",
+      y = "Тип") +
+    geom_smooth(method = "glm", 
+                method.args = list(family = "binomial")) +
+  theme_bw()
+```
+```{r}
+# Выводим кривую логистической регрессии зависимости типа опухоли от площади
+date %>%
+    ggplot(aes(x = area_mean, y = diagnosis)) +
+    geom_point() +
+    labs(title = "Зависимость типа опухоли и среней площади",
+      x = "Площадь",
+      y = "Тип") +
+    geom_smooth(method = "glm", 
+                method.args = list(family = "binomial")) +
+  theme_bw()
+```
+```{r}
+# выводим кривую логистической регрессии зависимости типа опухоли и текстуры
+date %>%
+    ggplot(aes(x = texture_mean, y = diagnosis)) +
+    geom_point() +
+    labs(title = "Зависимость типа опухоли и сренего значения текстуры опухоли",
+      x = "Текстура",
+      y = "Тип") +
+    geom_smooth(method = "glm", 
+                method.args = list(family = "binomial")) +
+  theme_bw()
+```
+```{r}
+# Строим логистическую регрессионную модель зависимости вероятности возникновения опухоли от всх трех факторов.
+gf1 <-
+  glm(diagnosis ~ radius_mean * area_mean * texture_mean,
+      date = cancer,
+      family = "binomial")
+
+summary(gf1)
+```
+```{r}
+# Вывод: взаимодействие всех трех факторов на пргноз возникновения опухоли статистически не значимы
+```
+```{r}
+# Задание 3
+# Загружаем данные и выводим их
+lung = survival::lung
+print(lung)
+```
+```{r}
+# Создаем переменную event, в которой будут отображаться выживаемость пациента (1-смерть, 0-выживаемость)
+lung$event <- ifelse(lung$status == 2,1,0)
+print(lung)
+```
+```{r}
+# Выводим пациентов которые не выжили
+lung_1 <- filter(lung,lung$event == 1)
+head(lung_1)
+```
+```{r}
+# Выводим модель и график выживаемости пациентов в зависимости от пола
+lung_survfit <- survfit(Surv(time, status) ~ sex, data = lung)
+ggsurvplot(lung_survfit, data = lung, risk.table = TRUE)
+```
+```{r}
+# Выводим лог-ранг тест для сравнения выживаемости мужчин и женщин
+lung_survdiff <- survdiff(Surv(time, status) ~ sex, data = lung)
+lung_survdiff
+```
+```{r}
+# Выводим график кумулятивной функции рисков по полу
+ggsurvplot(lung_survfit, data = lung, fun = "cumhaz", conf.int = TRUE)
+```
+```{r}
+# Выводим регрессию Кокса и ее график
+lung_cox <- coxph(Surv(time, status) ~ sex, data = lung)
+ggsurvplot(surv_fit(lung_cox, data = lung), data = lung)
+```
+```{r}
+# Вывод: Данные анализы показывают что пол является статистически значимым фактором выживаемости (p-value < 0.05) и у женщин в среднем выживаемость выше чем у мужчин
+```
+
+
